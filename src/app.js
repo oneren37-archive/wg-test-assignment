@@ -1,4 +1,5 @@
 import orders from '../data/orders.json';
+import users from '../data/users.json';
 
 function app(){
     document.addEventListener('DOMContentLoaded', evt => {
@@ -29,18 +30,40 @@ function renderRow(order){
     row.id = `order_${order.id}`
     row.className = "text-muted"
 
-    row.innerHTML = xss(`
+    row.innerHTML = `
         <tr id="order_${order.id}">
             <td>${order.transaction_id}</td>
-            <td class="user_data">${order.user_id}</td>
+            <td class="user_data"></td>
             <td>${formatDate(order.created_at)}</td>
             <td>$${order.total}</td>
             <td>${maskCardNumber(order.card_number)}</td>
             <td>${order.card_type}</td>
             <td>${order.order_country} (${order.order_ip})</td>
         </tr>
-    `)
+    `
+
+    row.querySelector(".user_data").appendChild(renderUserInfoLink(
+        users.find(e => e.id === order.id)
+    ))
+
     return row
+}
+
+
+/**
+ *
+ * @param {number} user.id идентификатор пользователя
+ * @param {string} user.gender пол, может быть один из "Male", "Female"
+ * @param {string} user.first_name пол, имя пользователя
+ * @param {string} user.last_name фамилия пользователя
+ * @return {HTMLElement} userInfoLink
+ */
+function renderUserInfoLink(user){
+    console.log(user.gender)
+    let userInfoLink = document.createElement('a')
+    userInfoLink.setAttribute('href', '#')
+    userInfoLink.textContent = `${(user.gender === "Male") ? "Mr." : "Ms."} ${user.first_name} ${user.last_name}`
+    return userInfoLink
 }
 
 /**
