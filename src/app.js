@@ -1,5 +1,6 @@
 import orders from '../data/orders.json';
 import users from '../data/users.json';
+import companies from '../data/companies.json';
 
 function app(){
     document.addEventListener('DOMContentLoaded', evt => {
@@ -34,7 +35,7 @@ function renderRow(order){
         <tr id="order_${order.id}">
             <td>${order.transaction_id}</td>
             <td class="user_data"></td>
-            <td>${formatDate(order.created_at)}</td>
+            <td>${formatDate(order.created_at, "DD/MM/YYYY hh:mm:ss")}</td>
             <td>$${order.total}</td>
             <td>${maskCardNumber(order.card_number)}</td>
             <td>${order.card_type}</td>
@@ -42,9 +43,11 @@ function renderRow(order){
         </tr>
     `
 
-    row.querySelector(".user_data").appendChild(renderUserInfoLink(
-        users.find(e => e.id === order.id)
-    ))
+    renderUserData(
+        row.querySelector(".user_data"),
+        users.find(user => user.id === order.user_id),
+        companies
+    )
 
     return row
 }
@@ -52,28 +55,61 @@ function renderRow(order){
 
 /**
  *
+ * @param {HTMLElement} rootNode корневой элемент
+ * @param {Object} user
  * @param {number} user.id идентификатор пользователя
  * @param {string} user.gender пол, может быть один из "Male", "Female"
  * @param {string} user.first_name пол, имя пользователя
  * @param {string} user.last_name фамилия пользователя
- * @return {HTMLElement} userInfoLink
+ * @param {string|null} user.birthday день рождения пользователя в формате unix timestamp
+ * @param {string|null} user.avatar ссылка на изображения с аватаром пользователя
+ * @param {number|null} user.company_id идентификатор компании, которую представляет пользователь
+ * @param {Object} companies
+ *
  */
-function renderUserInfoLink(user){
-    console.log(user.gender)
-    let userInfoLink = document.createElement('a')
-    userInfoLink.setAttribute('href', '#')
-    userInfoLink.textContent = `${(user.gender === "Male") ? "Mr." : "Ms."} ${user.first_name} ${user.last_name}`
-    return userInfoLink
+function renderUserData(rootNode, user, companies){
+
+    const company = companies.find(company => company.id === user.company_id)
+
+    let userCompanyInfoHTML = company ? `
+        <p>Company: ${company.url ? "<a href=" + company.url + " target=\"_blank\">" + company.title + "</a>": company.title}</p>
+        <p>Industry: ${company.industry} / ${company.sector}</p>`:""
+
+    rootNode.innerHTML = `
+        <a href="#">${(user.gender === "Male") ? "Mr." : "Ms."} ${user.first_name} ${user.last_name}</a>
+        <div class="user-details d-none">
+            ${user.birthday ? "<p>Birthday: " + formatDate(user.birthday, "DD/MM/YYYY") + "</p":''}
+            ${user.avatar ? '<p><img src="' +user.avatar + '" width="100px"></p>':''}
+            ${userCompanyInfoHTML}
+        </div>
+    `
+
+    rootNode.querySelector("a").addEventListener('click', (e) => {
+        e.preventDefault()
+        rootNode.querySelector(".user-details").classList.toggle("d-none")
+    })
 }
 
 /**
  *
  * @param {string} timestamp
+ * @param {string} [template = "DD/MM/YYYY"]
  * @return {string} formattedDate
  */
-function formatDate(timestamp){
+function formatDate(timestamp, template = "DD/MM/YYYY"){
     let date = new Date(1000 * timestamp)
-    return date.getDay() + '.' + date.getMonth() + '.' + date.getFullYear() + ' ' + date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds()
+    let result = ""
+
+    switch (template){
+        case "DD/MM/YYYY hh:mm:ss":
+            result = date.getDay() + '.' + date.getMonth() + '.' + date.getFullYear() + ' ' + date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds()
+            break
+
+        case "DD/MM/YYYY": result = date.getDay() + '.' + date.getMonth() + '.' + date.getFullYear()
+            break
+    }
+
+    return result
 }
 
 
