@@ -52,8 +52,9 @@ export class TableDataModel{
      * @param {order[]} orders
      * @param {user[]} users
      * @param {company[]} companies
+     * @param eventEmitter
      */
-    constructor(orders, users, companies) {
+    constructor(orders, users, companies, eventEmitter) {
         this._orders = orders
         this._companies = companies
         this._users = users
@@ -64,6 +65,10 @@ export class TableDataModel{
          */
         this.table = []
         this.makeTable()
+        this._eventEmitter = eventEmitter
+        this._bindEvents(this._eventEmitter)
+
+        this.sortState = {}
     }
 
 
@@ -86,7 +91,7 @@ export class TableDataModel{
                 userInfo: user,
                 userCompanyInfo: company?company:null,
                 orderDate: order.created_at,
-                orderAmount: order.total,
+                orderAmount: parseFloat(order.total),
                 cardNumber: order.card_number,
                 cardType: order.card_type,
                 location: `${order.order_country} (${order.order_ip})`
@@ -96,4 +101,57 @@ export class TableDataModel{
 
         })
     }
+
+    _bindEvents(eventEmitter){
+        eventEmitter.subscribe("SORT_TABLE", key => this._sortTable(key))
+    }
+
+    _sortTable(key){
+        let fields = {
+            TRANSACTION_ID: "transactionID",
+            ORDER_DATE: "orderDate",
+            ORDER_AMOUNT: "orderAmount",
+            CARD_TYPE: "cardType",
+            LOCATION: "location"
+        }
+        switch (key) {
+
+            case "USER_INFO":
+                if (this.sortState["USER_INFO"] && this.sortState["USER_INFO"] === "DESC"){
+                    this.table.sort((a, b) => {
+                            if(a.userInfo.first_name  === b.userInfo.first_name ){
+                                return a.userInfo.last_name < b.userInfo.last_name  ? -1 : 1
+                            }
+                            return a.userInfo.first_name < b.userInfo.first_name  ? -1 : 1
+                    })
+                    this.sortState = {"USER_INFO": "ASC"}
+                }
+                else {
+                    this.table.sort((a, b) => {
+                        if(a.userInfo.first_name  === b.userInfo.first_name ){
+                            return a.userInfo.last_name  > b.userInfo.last_name  ? -1 : 1
+                        }
+                        return a.userInfo.first_name  > b.userInfo.first_name  ? -1 : 1
+                    })
+                    this.sortState = {"USER_INFO": "DESC"}
+                }
+                this._eventEmitter.emit("TABLE_CHANGED")
+                return
+
+            case "CARD_NUMBER": return
+        }
+
+        if (this.sortState[key] && this.sortState[key] === "DESC"){
+            this.table.sort((a, b) => a[fields[key]] < b[fields[key]] ? -1 : 1)
+            this.sortState = {}
+            this.sortState[key] = "ASC"
+        }
+        else {
+            this.table.sort((a, b) => a[fields[key]] > b[fields[key]] ? -1 : 1)
+            this.sortState = {}
+            this.sortState[key] = "DESC"
+        }
+        this._eventEmitter.emit("TABLE_CHANGED")
+    }
+
 }

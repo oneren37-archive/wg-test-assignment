@@ -3,22 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <title>WG Forge Test</title>
-<!--    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">-->
     <link rel="stylesheet" href="https://bootswatch.com/5/darkly/bootstrap.min.css" crossorigin="anonymous">
+    <style>
+        .clickable-th{
+            cursor:pointer;
+        }
+        .clickable-th:hover{
+            box-shadow: none;
+        }
+    </style>
 </head>
 <body>
-    <div id="app" class="container mt-5 mt-5">
+    <div id="app" class="container-xxl mt-5">
 
         <table class="table">
             <thead>
             <tr>
-                <th>Transaction ID</th>
-                <th>User Info</th>
-                <th>Order Date</th>
-                <th>Order Amount</th>
-                <th>Card Number</th>
-                <th>Card Type</th>
-                <th>Location</th>
+                <th class="clickable-th" id="js-transaction-id">Transaction ID</th>
+                <th class="clickable-th" id="js-user-info">User Info</th>
+                <th class="clickable-th" id="js-order-date">Order Date</th>
+                <th class="clickable-th" id="js-order-amount">Order Amount</th>
+                <th class="" id="js-card-num">Card Number</th>
+                <th class="clickable-th" id="js-card-type">Card Type</th>
+                <th class="clickable-th" id="js-location">Location</th>
             </tr>
             </thead>
             <tbody>
