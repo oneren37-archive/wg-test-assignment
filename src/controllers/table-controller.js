@@ -2,20 +2,19 @@ import companies from '../../data/companies.json';
 import orders from '../../data/orders.json';
 import users from '../../data/users.json';
 
-import {TableDataModel} from "../data-model/table-data-model.js";
-import {Table} from "../view-components/table.js";
-import {EventEmitter} from "../event-emitter.js";
+import {DataModel} from "../data-model/data-model.js";
+import {MainTable} from "../view-components/main-table/main-table.js";
 
 export class TableController{
 
-    constructor() {
-        this._eventEmitter = new EventEmitter()
-        this._tableDataModel = new TableDataModel(orders, users, companies, this._eventEmitter)
-        this._tableComponent = new Table(
-            document.querySelector('tbody'),
+    constructor(dataModel, eventEmitter) {
+        this._eventEmitter = eventEmitter
+        this._dataModel = dataModel
+        this._tableComponent = new MainTable(
+            document.querySelector('.main-table>tbody'),
             {
-                table: this._tableDataModel.table,
-                sortState: this._tableDataModel.sortState
+                table: this._dataModel.table,
+                sortState: this._dataModel.sortState
             },
             this._eventEmitter
         )
@@ -23,10 +22,10 @@ export class TableController{
     }
 
     bindEvents(){
-        this._eventEmitter.subscribe("TABLE_CHANGED", () => {
+        this._eventEmitter.subscribe("MAIN_TABLE_CHANGED", () => {
             this._tableComponent.bindModel({
-                table: this._tableDataModel.table,
-                sortState: this._tableDataModel.sortState
+                table: this._dataModel.table,
+                sortState: this._dataModel.sortState
             })
         })
     }

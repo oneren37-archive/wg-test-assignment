@@ -1,4 +1,4 @@
-export class TableDataModel{
+export class DataModel {
 
     /**
      * @typedef {Object} order
@@ -69,6 +69,9 @@ export class TableDataModel{
         this._bindEvents(this._eventEmitter)
 
         this.sortState = {}
+        this.stat = {}
+        this._updateStat()
+        this._eventEmitter.subscribe('MAIN_TABLE_CHANGED', ()=>this._updateStat())
     }
 
 
@@ -135,7 +138,7 @@ export class TableDataModel{
                     })
                     this.sortState = {"USER_INFO": "DESC"}
                 }
-                this._eventEmitter.emit("TABLE_CHANGED")
+                this._eventEmitter.emit("MAIN_TABLE_CHANGED")
                 return
 
             case "CARD_NUMBER": return
@@ -151,7 +154,65 @@ export class TableDataModel{
             this.sortState = {}
             this.sortState[key] = "DESC"
         }
-        this._eventEmitter.emit("TABLE_CHANGED")
+        this._eventEmitter.emit("MAIN_TABLE_CHANGED")
     }
 
+
+    _updateStat(){
+        let ordersCount = this.table.length
+        let ordersTotal = Math.round(
+            this.table.reduce(
+                (accumulator, {orderAmount}, initialValue) => {
+                    return accumulator + orderAmount
+                }, 0
+            )
+        )
+
+
+        let maleOrdersCount = 0
+        let femaleOrdersCount = 0
+
+        let maleOrdersTotal = this.table.reduce(
+            (accumulator, {userInfo, orderAmount}, initialValue) => {
+                if(userInfo.gender === "Male"){
+                    maleOrdersCount++
+                    return accumulator + orderAmount
+                }
+                else{
+                    return accumulator
+                }
+            }, 0
+        )
+        let femaleOrdersTotal = this.table.reduce(
+            (accumulator, {userInfo, orderAmount}, initialValue) => {
+                if(userInfo.gender === "Female"){
+                    femaleOrdersCount++
+                    return accumulator + orderAmount
+                }
+                else{
+                    return accumulator
+                }
+            }, 0
+        )
+
+        let medianValue = this.table.slice().sort((a, b) => {
+                return a.orderAmount < b.orderAmount ? -1 : 1
+            }
+        )[this.table.length/2].orderAmount
+
+        let averageCheck = Math.round(ordersTotal/ordersCount)
+        let averageCheckFemale = Math.round(femaleOrdersTotal/femaleOrdersCount)
+        let averageCheckMale = Math.round(maleOrdersTotal/maleOrdersCount)
+
+
+        this.stat = {
+            ordersCount: ordersCount,
+            ordersTotal: ordersTotal,
+            medianValue: medianValue,
+            averageCheck: averageCheck,
+            averageCheckFemale: averageCheckFemale,
+            averageCheckMale: averageCheckMale,
+        }
+        this._eventEmitter.emit("STAT_CHANGED")
+    }
 }

@@ -1,6 +1,6 @@
-import {AbstractRenderComponent} from "./abstract-render-component.js";
+import {AbstractRenderComponent} from "../abstract-components/abstract-render-component.js";
 
-export class TableRow extends AbstractRenderComponent{
+export class MainTableRow extends AbstractRenderComponent{
 
 
     /**

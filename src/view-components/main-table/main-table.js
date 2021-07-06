@@ -1,12 +1,12 @@
-import {AbstractDomMountComponent} from "./abstract-mount-component.js";
-import {TableRow} from "./table-row.js";
+import {AbstractDomMountComponent} from "../abstract-components/abstract-mount-component.js";
+import {MainTableRow} from "./main-table-row.js";
 
-export class Table extends AbstractDomMountComponent{
+export class MainTable extends AbstractDomMountComponent{
 
     bindModel(props) {
         this._rootNode.innerHTML = ''
         props.table.forEach((row) => {
-            let tableRow = new TableRow(row)
+            let tableRow = new MainTableRow(row)
             this._rootNode.appendChild(tableRow.root)
         })
         this.findElements()
