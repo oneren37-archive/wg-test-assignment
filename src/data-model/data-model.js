@@ -60,27 +60,21 @@ export class DataModel {
         this._users = users
 
         /**
-         *
          * @type {tableRow[]}
          */
         this.table = []
         this.makeTable()
+        this.tableFull = this.table.slice()
         this._eventEmitter = eventEmitter
         this._bindEvents(this._eventEmitter)
 
         this.sortState = {}
         this.stat = {}
         this._updateStat()
-        this._eventEmitter.subscribe('MAIN_TABLE_CHANGED', ()=>this._updateStat())
     }
 
 
-    /**
-     * @param {string[]|null} filters
-     * @param {string|null} sort
-     */
-    makeTable(filters=null, sort=null){
-
+    makeTable(){
         this._orders.forEach((order)=>{
             const user = this._users.find(user => user.id === order.user_id)
             const company = this._companies.find(c => c.id === user.company_id)
@@ -101,15 +95,47 @@ export class DataModel {
             }
 
             this.table.push(row)
-
         })
     }
 
     _bindEvents(eventEmitter){
-        eventEmitter.subscribe("SORT_TABLE", key => this._sortTable(key))
+        eventEmitter.subscribe('MAIN_TABLE_CHANGED', () => {
+            if (this.table.length) {
+                this._updateStat()
+            }
+        })
+        eventEmitter.subscribe("SORT_TABLE", key => {
+            const currentSortingKey = Object.keys(this.sortState)[0]
+            const currentSortingMethod = this.sortState[currentSortingKey]
+
+            if (currentSortingKey && currentSortingKey === key){
+                let newSortState = {}
+                newSortState[key] = currentSortingMethod === "DESC" ? "ASC" : "DESC"
+                this._sortTable(newSortState)
+                this.sortState = newSortState
+            }
+            else {
+                let newSortState = {}
+                newSortState[key] = "DESC"
+                this._sortTable(newSortState)
+                this.sortState = newSortState
+            }
+            this._eventEmitter.emit("MAIN_TABLE_CHANGED")
+        })
+        eventEmitter.subscribe("SEARCH", value => this._search(value))
     }
 
-    _sortTable(key){
+
+    /**
+     * принимает параметры сортировки и сортирует this.table
+     * @param {Object<string, string>} newSortState
+     * @private
+     */
+    _sortTable(newSortState){
+
+        const key = Object.keys(newSortState)[0]
+        const order = newSortState[key]
+
         let fields = {
             TRANSACTION_ID: "transactionID",
             ORDER_DATE: "orderDate",
@@ -118,46 +144,45 @@ export class DataModel {
             LOCATION: "location"
         }
         switch (key) {
-
             case "USER_INFO":
-                if (this.sortState["USER_INFO"] && this.sortState["USER_INFO"] === "DESC"){
+                if (order === "DESC"){
                     this.table.sort((a, b) => {
                             if(a.userInfo.first_name  === b.userInfo.first_name ){
-                                return a.userInfo.last_name < b.userInfo.last_name  ? -1 : 1
+                                return a.userInfo.last_name < b.userInfo.last_name  ? 1 : -1
                             }
-                            return a.userInfo.first_name < b.userInfo.first_name  ? -1 : 1
+                            return a.userInfo.first_name < b.userInfo.first_name  ? 1 : -1
                     })
-                    this.sortState = {"USER_INFO": "ASC"}
                 }
                 else {
                     this.table.sort((a, b) => {
                         if(a.userInfo.first_name  === b.userInfo.first_name ){
-                            return a.userInfo.last_name  > b.userInfo.last_name  ? -1 : 1
+                            return a.userInfo.last_name  > b.userInfo.last_name  ? 1 : -1
                         }
-                        return a.userInfo.first_name  > b.userInfo.first_name  ? -1 : 1
+                        return a.userInfo.first_name  > b.userInfo.first_name  ? 1 : -1
                     })
-                    this.sortState = {"USER_INFO": "DESC"}
                 }
-                this._eventEmitter.emit("MAIN_TABLE_CHANGED")
                 return
 
             case "CARD_NUMBER": return
         }
 
-        if (this.sortState[key] && this.sortState[key] === "DESC"){
-            this.table.sort((a, b) => a[fields[key]] < b[fields[key]] ? -1 : 1)
-            this.sortState = {}
-            this.sortState[key] = "ASC"
+        if (order === "DESC"){
+            this.table.sort((a, b) => {
+                return a[fields[key]] < b[fields[key]] ? 1 : -1
+            })
         }
         else {
-            this.table.sort((a, b) => a[fields[key]] > b[fields[key]] ? -1 : 1)
-            this.sortState = {}
-            this.sortState[key] = "DESC"
+            this.table.sort((a, b) => {
+                return a[fields[key]] > b[fields[key]] ? 1 : -1
+            })
         }
-        this._eventEmitter.emit("MAIN_TABLE_CHANGED")
     }
 
 
+    /**
+     * обновляет this.stat
+     * @private
+     */
     _updateStat(){
         let ordersCount = this.table.length
         let ordersTotal = Math.round(
@@ -198,7 +223,7 @@ export class DataModel {
         let medianValue = this.table.slice().sort((a, b) => {
                 return a.orderAmount < b.orderAmount ? -1 : 1
             }
-        )[this.table.length/2].orderAmount
+        )[Math.floor(this.table.length / 2)].orderAmount
 
         let averageCheck = Math.round(ordersTotal/ordersCount)
         let averageCheckFemale = Math.round(femaleOrdersTotal/femaleOrdersCount)
@@ -214,5 +239,23 @@ export class DataModel {
             averageCheckMale: averageCheckMale,
         }
         this._eventEmitter.emit("STAT_CHANGED")
+    }
+
+
+    /**
+     * @param {string} value
+     * @private
+     */
+    _search(value){
+        this.table = this.tableFull.filter(row => {
+            return  row.userInfo.first_name.includes(value)
+                ||  row.userInfo.last_name.includes(value)
+                ||  row.transactionID.includes(value)
+                ||  row.orderAmount.toString().includes(value)
+                ||  row.cardType.includes(value)
+                ||  row.location.includes(value)
+        })
+        this._sortTable(this.sortState)
+        this._eventEmitter.emit('MAIN_TABLE_CHANGED')
     }
 }

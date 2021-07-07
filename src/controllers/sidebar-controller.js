@@ -1,4 +1,5 @@
 import {StatTable} from "../view-components/sidebar/stat-table.js";
+import {Search} from "../view-components/sidebar/search.js";
 
 export class SidebarController {
     constructor(dataModel, eventEmitter) {
@@ -9,6 +10,11 @@ export class SidebarController {
             {
                 stat: this._dataModel.stat
             },
+            this._eventEmitter
+        )
+        this.searchComponent = new Search(
+            document.querySelector('.search-form'),
+            {},
             this._eventEmitter
         )
         this.bindEvents()
